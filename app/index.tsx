@@ -1,6 +1,13 @@
 import { Link } from "expo-router";
 import { useEffect, useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 interface Pokemon {
   name: string;
@@ -39,11 +46,20 @@ const colorByType: Record<string, string> = {
 export default function Index() {
   const api = "https://pokeapi.co/api/v2/pokemon/?limit=20";
   const [pokemons, setPokemons] = useState<Pokemon[]>([]);
-  console.log(JSON.stringify(pokemons[0], null, 2));
+  const [pageUrl, setPageUrl] = useState(api);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [nextPageUrl, setNextPageUrl] = useState(null);
+  const [prevPageUrl, setPrevPageUrl] = useState(null);
+  // console.log(JSON.stringify(pokemons[0], null, 2));
   async function getData() {
+    setIsLoading(true);
     try {
-      const response = await fetch(api);
+      const response = await fetch(pageUrl);
       const data = await response.json();
+
+      setNextPageUrl(data.next);
+      setPrevPageUrl(data.previous);
 
       const detailsPokemons = await Promise.all(
         data.results.map(async (pokemon: any) => {
@@ -61,15 +77,38 @@ export default function Index() {
       setPokemons(detailsPokemons);
     } catch (error) {
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   useEffect(() => {
     getData();
-  }, []);
+  }, [pageUrl]);
 
+  if (isLoading) {
+    return (
+      <Text style={{ textAlign: "center", fontSize: 20 }}>Cargando...</Text>
+    );
+  }
   return (
     <ScrollView contentContainerStyle={{ gap: 16, padding: 16 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
+        <Pressable
+          onPress={() => prevPageUrl && setPageUrl(prevPageUrl)}
+          disabled={!prevPageUrl}
+          style={styles.button}
+        >
+          <Text>Previous</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => nextPageUrl && setPageUrl(nextPageUrl)}
+          disabled={!nextPageUrl}
+          style={styles.button}
+        >
+          <Text>Next</Text>
+        </Pressable>
+      </View>
       {pokemons.map((pokemon) => (
         <Link
           key={pokemon.name}
@@ -122,5 +161,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "gray",
     textAlign: "center",
+  },
+  button: {
+    backgroundColor: "gray",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  IsLoading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

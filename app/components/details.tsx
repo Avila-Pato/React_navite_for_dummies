@@ -36,13 +36,13 @@ const colorByType: Record<string, string> = {
 const Details = () => {
   const { name } = useLocalSearchParams<{ name: string }>();
   const [pokemon, setPokemon] = useState<PokemonDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function fetchPokemon() {
+      setIsLoading(true);
       try {
-        const res = await fetch(
-          `https://pokeapi.co/api/v2/pokemon/${name}`
-        );
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
         const details = await res.json();
         setPokemon({
           name: details.name,
@@ -55,15 +55,18 @@ const Details = () => {
         });
       } catch (error) {
         console.error(error);
+      } finally {
+        setIsLoading(false);
       }
     }
     if (name) fetchPokemon();
   }, [name]);
 
   const typeColor = pokemon
-    ? colorByType[pokemon.types[0].type.name] ?? "#a8a878"
+    ? (colorByType[pokemon.types[0].type.name] ?? "#a8a878")
     : "#a8a878";
 
+  if (isLoading) return <Text>Loading...</Text>;
   return (
     <>
       <Stack.Screen options={{ headerShown: true, title: name ?? "Details" }} />
@@ -94,8 +97,12 @@ const Details = () => {
               />
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Height: {pokemon.height / 10} m</Text>
-              <Text style={styles.infoLabel}>Weight: {pokemon.weight / 10} kg</Text>
+              <Text style={styles.infoLabel}>
+                Height: {pokemon.height / 10} m
+              </Text>
+              <Text style={styles.infoLabel}>
+                Weight: {pokemon.weight / 10} kg
+              </Text>
             </View>
             <View style={{ width: "100%", gap: 8 }}>
               <Text style={styles.statsTitle}>Stats</Text>
